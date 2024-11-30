@@ -1,0 +1,61 @@
+# actions.yaml
+# Runn on all commits to the repository
+name: 'Vcpkg CI'
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
+env:
+  VCPKG_BINARY_SOURCES: 'clear;nuget,GitHub,readwrite'
+
+matrix:
+  os: ['windows-2019', 'ubuntu-20.04']
+  include:
+    - os: 'windows-2019'
+      triplet: 'x86-windows'
+      mono: ''
+    - os: 'ubuntu-20.04'
+      triplet: 'x64-linux'
+      # To run `nuget.exe` on non-Windows platforms, `mono` must be used.
+      mono: 'mono'
+
+
+steps:
+  - uses: actions/checkout@v2
+    name: 'Checkout repository'
+  - name: 'Install vcpkg'
+    shell: 'bash'
+    if: startsWith(matrix.os, 'ubuntu')
+    run: |
+      git submodule update --init
+      ./vcpkg/bootstrap-vcpkg.sh
+  - name: 'Install vcpkg'
+    shell: 'powershell'
+    if: startsWith(matrix.os, 'windows')
+    run: |
+      git submodule update --init
+      .\vcpkg\bootstrap-vcpkg.bat
+  - name: 'Setup NuGet Credentials'
+    shell: 'bash'
+    run: |
+      ${{ matrix.mono }} `./vcpkg/vcpkg fetch nuget | tail -n 1` \
+        sources add \
+        -source "https://nuget.pkg.github.com/moratom/index.json" \
+        -storepasswordincleartext \
+        -name "GitHub" \
+        -username "moratom" \
+        -password "${{ secrets.GITHUB_TOKEN }}"
+      ${{ matrix.mono }} `./vcpkg/vcpkg fetch nuget | tail -n 1` \
+        setapikey "${{ secrets.GITHUB_TOKEN }}" \
+        -source "https://nuget.pkg.github.com/moratom/index.json"
+
+  # Omit this step if you're using manifests
+  - name: 'vcpkg package restore'
+    shell: 'bash'
+    run: >
+      ./vcpkg/vcpkg install sqlite3 cpprestsdk --triplet ${{ matrix.triplet }}

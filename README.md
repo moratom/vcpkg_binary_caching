@@ -1,0 +1,1 @@
+# vcpkg_binary_caching

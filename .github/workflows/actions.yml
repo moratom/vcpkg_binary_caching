@@ -49,9 +49,9 @@ jobs:
             -storepasswordincleartext \
             -name "GitHub" \
             -username "moratom" \
-            -password "${{ secrets.GITHUB_TOKEN }}"
+            -password "${{ secrets.GH_ACTIONS_TOKEN }}"
           ${{ matrix.mono }} `./vcpkg/vcpkg fetch nuget | tail -n 1` \
-            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            setapikey "${{ secrets.GH_ACTIONS_TOKEN }}" \
             -source "https://nuget.pkg.github.com/moratom/index.json"
         shell: bash
 
